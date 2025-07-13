@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Сканер QR и Bar кодов с камеры</title>
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 480px;
+      border: 2px solid #333;
+      border-radius: 12px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 18px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h2>Сканирование с камеры (QR + штрих‑код)</h2>
+  <video id="video" autoplay muted playsinline></video>
+  <div id="result">Ожидание камеры...</div>
+
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const resultDiv = document.getElementById('result');
+
+    let lastResult = '';
+    let scanInterval;
+
+    async function initCamera() {
+      try {
+        const videoInputDevices = await codeReader.getVideoInputDevices();
+        const selectedDeviceId = videoInputDevices[0].deviceId;
+
+        await codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
+          if (result) {
+            const text = result.getText();
+            if (text !== lastResult) {
+              lastResult = text;
+              resultDiv.textContent = 'Распознанный код: ' + text;
+              console.log('Код найден:', text);
+
+              // Для ELMA365: отправка наружу
+              window.parent.postMessage({ type: 'barcode-scanned', value: text }, '*');
+            }
+          }
+        });
+      } catch (err) {
+        resultDiv.textContent = 'Ошибка доступа к камере: ' + err;
+        console.error(err);
+      }
+    }
+
+    initCamera();
+  </script>
+</body>
+</html>
